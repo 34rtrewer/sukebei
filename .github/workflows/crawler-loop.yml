@@ -1,50 +1,41 @@
 name: Sukebei Crawler Loop
-
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'  # 兜底：每天触发一次防止中断
-
+    - cron: '0 0 * * *'
 permissions:
   contents: write
   actions: write
-
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 11  # GitHub Actions 最长6小时，留10分钟给收尾
+    timeout-minutes: 11
     concurrency:
       group: crawler-loop
       cancel-in-progress: false
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install curl_cffi beautifulsoup4
-
       - name: Run Crawler (跑满5h50min 或跑完全部)
+        continue-on-error: true
+        timeout-minutes: 9
         run: |
           echo "Starting crawler..."
-          # batch-size=0 表示不限条数，跑到 timeout 为止
-          # 代理池已内置在脚本里，不需要 PROXY_URL
           python nyaa_crawler_proxy2.py \
             --workers 5 \
             --min-delay 0.8 \
             --max-delay 1.1 \
             --batch-size 0
-        timeout-minutes: 9  # 5小时40分，留时间给后续步骤
-
       - name: Commit and push results
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -53,10 +44,9 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "crawler: $(cat crawler_state.json)"
+            git commit -m "crawler: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             git push
           fi
-
       - name: Trigger next run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
