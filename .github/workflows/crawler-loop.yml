@@ -12,7 +12,7 @@ permissions:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 350  # GitHub Actions 最长6小时，留10分钟给收尾
+    timeout-minutes: 10  # GitHub Actions 最长6小时，留10分钟给收尾
     concurrency:
       group: crawler-loop
       cancel-in-progress: false
@@ -43,7 +43,7 @@ jobs:
             --min-delay 0.8 \
             --max-delay 1.1 \
             --batch-size 0
-        timeout-minutes: 340  # 5小时40分，留时间给后续步骤
+        timeout-minutes: 9  # 5小时40分，留时间给后续步骤
 
       - name: Commit and push results
         run: |
