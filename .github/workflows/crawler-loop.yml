@@ -12,7 +12,7 @@ permissions:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # GitHub Actions 最长6小时，留10分钟给收尾
+    timeout-minutes: 11  # GitHub Actions 最长6小时，留10分钟给收尾
     concurrency:
       group: crawler-loop
       cancel-in-progress: false
