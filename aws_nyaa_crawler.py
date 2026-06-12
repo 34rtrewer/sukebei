@@ -143,7 +143,7 @@ def load_state():
                 return json.load(f)
     except:
         pass
-    return {"progress": 4172147, "count": 0}
+    return {"progress": 4041109, "count": 0}
 
 # ============================================================
 # 主爬虫
@@ -151,7 +151,7 @@ def load_state():
 
 async def run_crawler(start_id, end_id, workers, min_delay, max_delay, proxy_arg, output_file, batch_size):
     state = load_state()
-    if start_id == 4172147 and state["progress"] < 4172147:
+    if start_id == 4041109 and state["progress"] < 4041109:
         print(f"[*] Resuming from state: {state['progress']}")
         start_id = state["progress"]
 
@@ -263,7 +263,7 @@ async def run_crawler(start_id, end_id, workers, min_delay, max_delay, proxy_arg
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--start",      type=int,   default=4172147)
+    parser.add_argument("--start",      type=int,   default=4041109)
     parser.add_argument("--end",        type=int,   default=92)
     parser.add_argument("--workers",    type=int,   default=5)
     parser.add_argument("--proxy",      type=str,   default=None,
