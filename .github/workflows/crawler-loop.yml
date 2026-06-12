@@ -3,7 +3,7 @@ name: Sukebei Crawler Loop
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # 兜底：每天触发一次防止中断
 
 permissions:
   contents: write
@@ -12,6 +12,7 @@ permissions:
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    timeout-minutes: 350  # GitHub Actions 最长6小时，留10分钟给收尾
     concurrency:
       group: crawler-loop
       cancel-in-progress: false
@@ -32,34 +33,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install curl_cffi beautifulsoup4
 
-      - name: Run Crawler (1100 IDs batch)
-        env:
-          PROXY_URL: ${{ secrets.PROXY_URL }}
+      - name: Run Crawler (跑满5h50min 或跑完全部)
         run: |
-          echo "Starting crawler batch..."
-          if [ -n "$PROXY_URL" ]; then
-            python aws_nyaa_crawler.py --workers 5 --batch-size 1100 --proxy "$PROXY_URL"
-          else
-            python aws_nyaa_crawler.py --workers 5 --batch-size 1100
-          fi
+          echo "Starting crawler..."
+          # batch-size=0 表示不限条数，跑到 timeout 为止
+          # 代理池已内置在脚本里，不需要 PROXY_URL
+          python nyaa_crawler_proxy2.py \
+            --workers 5 \
+            --min-delay 0.8 \
+            --max-delay 1.1 \
+            --batch-size 0
+        timeout-minutes: 340  # 5小时40分，留时间给后续步骤
 
-      - name: Commit and Push changes
+      - name: Commit and push results
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add crawler_state.json nyaa_results_*.jsonl || true
-
+          git add crawler_state.json nyaa_*.jsonl || true
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Auto-update: Crawler progress and results"
+            git commit -m "crawler: $(cat crawler_state.json)"
             git push
           fi
 
-      - name: Trigger next run after delay
+      - name: Trigger next run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Waiting 1 minute before triggering next run..."
-          sleep 60
+          echo "Triggering next run..."
           gh workflow run "Sukebei Crawler Loop" --ref main
